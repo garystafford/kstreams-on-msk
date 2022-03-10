@@ -6,6 +6,8 @@
 - <https://github.com/JohnReedLOL/kafka-streams/blob/master/src/main/java/io/confluent/examples/streams/SecureKafkaStreamsExample.java>
 
 ```shell
+gradle clean shadowJar
+
 export AWS_ACCOUNT=$(aws sts get-caller-identity --output text --query 'Account')
 export EKS_REGION="us-east-1"
 export CLUSTER_NAME="istio-observe-demo"
@@ -22,14 +24,17 @@ kubectl exec -it $KAFKA_CONTAINER -n kafka -c kafka-connect-msk-v3 -- bash
 
 java -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample
 
+java -verbose -Xdebug -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample $BOOTSTRAP_SERVERS
+
 # java -cp target/kafka-streams-examples-7.0.1-standalone.jar io.confluent.examples.streams.WordCountLambdaExample
 
 # *** CHANGE ME - Bootstrap servers ***
 export BOOTSTRAP_SERVERS="b-1.demo-msk-cluster-iam.99s971.c2.kafka.us-east-1.amazonaws.com:9098,b-2.demo-msk-cluster-iam.99s971.c2.kafka.us-east-1.amazonaws.com:9098,b-3.demo-msk-cluster-iam.99s971.c2.kafka.us-east-1.amazonaws.com:9098"
+export BOOTSTRAP_SERVERS="b-4.demo-msk-cluster-iam.99s971.c2.kafka.us-east-1.amazonaws.com:9094,b-3.demo-msk-cluster-iam.99s971.c2.kafka.us-east-1.amazonaws.com:9094,b-2.demo-msk-cluster-iam.99s971.c2.kafka.us-east-1.amazonaws.com:9094"
+export BOOTSTRAP_SERVERS="b-2.demo-msk-cluster-iam.99s971.c2.kafka.us-east-1.amazonaws.com:9092,b-3.demo-msk-cluster-iam.99s971.c2.kafka.us-east-1.amazonaws.com:9092,b-4.demo-msk-cluster-iam.99s971.c2.kafka.us-east-1.amazonaws.com:9092"
 
 bin/kafka-topics.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
-  --command-config config/client-iam.properties \
   --create \
   --topic streams-plaintext-input \
   --partitions 3 \
@@ -37,7 +42,6 @@ bin/kafka-topics.sh \
 
 bin/kafka-topics.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
-  --command-config config/client-iam.properties \
   --create \
   --topic streams-wordcount-output \
   --partitions 3 \
@@ -45,42 +49,40 @@ bin/kafka-topics.sh \
 
 bin/kafka-console-producer.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
-  --producer.config config/client-iam.properties \
   --topic streams-plaintext-input
+
+#  --producer.config config/client-iam.properties \
 
 bin/kafka-console-consumer.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
-  --consumer.config config/client-iam.properties \
   --topic streams-plaintext-input \
   --from-beginning --max-messages 10 \
 
 bin/kafka-console-consumer.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
-  --consumer.config config/client-iam.properties \
   --topic streams-wordcount-output \
   --from-beginning \
   --property print.key=true \
   --property value.deserializer=org.apache.kafka.common.serialization.LongDeserializer
 
+# list topics
 bin/kafka-topics.sh --list \
-  --bootstrap-server $BBROKERS \
-  --command-config config/client-iam.properties
+  --bootstrap-server $BOOTSTRAP_SERVERS
+#  --command-config config/client-iam.properties
 
 # get topic size
 bin/kafka-log-dirs.sh --describe \
   --bootstrap-server $BOOTSTRAP_SERVERS \
-  --command-config config/client-iam.properties \
   --topic-list streams-plaintext-input
 
 bin/kafka-log-dirs.sh --describe \
   --bootstrap-server $BOOTSTRAP_SERVERS \
-  --command-config config/client-iam.properties \
   --topic-list streams-wordcount-output
 
 # delete topic
 bin/kafka-topics.sh --delete \
   --topic streams-plaintext-input \
-  --bootstrap-server $BBROKERS \
+  --bootstrap-server $BOOTSTRAP_SERVERS \
   --command-config config/client-iam.properties
 
 ```

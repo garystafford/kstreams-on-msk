@@ -17,7 +17,6 @@ package io.confluent.examples.streams;
  */
 
 import io.confluent.common.utils.TestUtils;
-import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -149,7 +148,7 @@ public class WordCountLambdaExample {
             ex.printStackTrace();
         }
 
-        final String bootstrapServers = args.length > 0 ? args[0] : "b-1.demo-msk-cluster-iam.99s971.c2.kafka.us-east-1.amazonaws.com:9098,b-2.demo-msk-cluster-iam.99s971.c2.kafka.us-east-1.amazonaws.com:9098,b-3.demo-msk-cluster-iam.99s971.c2.kafka.us-east-1.amazonaws.com:9098";
+        final String bootstrapServers = args.length > 0 ? args[0] : "localhost:9092";
         logger.debug(bootstrapServers);
 
         // Configure the Streams application.
@@ -208,10 +207,10 @@ public class WordCountLambdaExample {
         // Use a temporary directory for storing state, which will be automatically removed after the test.
         streamsConfiguration.put(StreamsConfig.STATE_DIR_CONFIG, TestUtils.tempDirectory().getAbsolutePath());
 
-        streamsConfiguration.put(StreamsConfig.SECURITY_PROTOCOL_CONFIG, prop.getProperty("security.protocol"));
-        streamsConfiguration.put(SaslConfigs.SASL_MECHANISM, prop.getProperty("sasl.mechanism"));
-        streamsConfiguration.put(SaslConfigs.SASL_JAAS_CONFIG, prop.getProperty("sasl.jaas.config"));
-        streamsConfiguration.put(SaslConfigs.SASL_CLIENT_CALLBACK_HANDLER_CLASS, prop.getProperty("sasl.client.callback.handler.class"));
+//        streamsConfiguration.put(StreamsConfig.SECURITY_PROTOCOL_CONFIG, prop.getProperty("security.protocol"));
+//        streamsConfiguration.put(SaslConfigs.SASL_MECHANISM, prop.getProperty("sasl.mechanism"));
+//        streamsConfiguration.put(SaslConfigs.SASL_JAAS_CONFIG, prop.getProperty("sasl.jaas.config"));
+//        streamsConfiguration.put(SaslConfigs.SASL_CLIENT_CALLBACK_HANDLER_CLASS, prop.getProperty("sasl.client.callback.handler.class"));
 
         logger.debug(streamsConfiguration);
 
