@@ -1,9 +1,15 @@
-# Instructions
+# Kafka Streams Example for Amazon MSK with IAM Auth
+
+Adoption of the `WordCountLambdaExample.java` code example from Confluent for use with IAM access control for Amazon MSK. Example code demonstrates the Apache Kafka Streams API (aka Kafka Streams or KStreams).
 
 ## Reference
 
-- <https://github.com/confluentinc/kafka-streams-examples/blob/7.0.1-post/src/main/java/io/confluent/examples/streams/io.confluent.examples.streams.WordCountLambdaExample.java>
+- <https://github.com/confluentinc/kafka-streams-examples/blob/7.0.0-post/src/main/java/io/confluent/examples/streams/WordCountLambdaExample.java>
 - <https://github.com/JohnReedLOL/kafka-streams/blob/master/src/main/java/io/confluent/examples/streams/SecureKafkaStreamsExample.java>
+
+## Commands to Build, Copy, and Run
+
+Commands to build with Gradle, copy to an Amazon EKS pod container and run.
 
 ```shell
 gradle clean shadowJar
@@ -12,54 +18,56 @@ export AWS_ACCOUNT=$(aws sts get-caller-identity --output text --query 'Account'
 export EKS_REGION="us-east-1"
 export CLUSTER_NAME="istio-observe-demo"
 export NAMESPACE="kafka"
-
-kubectl cp -n kafka build/libs/KStreamsDemo-1.0-SNAPSHOT.jar $KAFKA_CONTAINER:/kafka_2.13-3.1.0
-kubectl cp -n kafka build/libs/KStreamsDemo-1.0-SNAPSHOT-all.jar $KAFKA_CONTAINER:/kafka_2.13-3.1.0
-
-export KAFKA_CONTAINER=$(
+export KAFKA_POD=$(
   kubectl get pods -n kafka -l app=kafka-connect-msk-v3 | \
     awk 'FNR == 2 {print $1}')
 
-kubectl exec -it $KAFKA_CONTAINER -n kafka -c kafka-connect-msk-v3 -- bash
+kubectl cp -n kafka -c kstreams-app build/libs/KStreamsDemo-1.0-SNAPSHOT-all.jar $KAFKA_POD:/kafka_2.13-3.1.0
 
-java -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample
+# run app
+kubectl exec -it $KAFKA_POD -n kafka -c kstreams-app -- bash
+
+# run producer/consumer
+kubectl exec -it $KAFKA_POD -n kafka -c kafka-connect-msk-v3 -- bash
+
+# *** CHANGE ME - Bootstrap servers ***
+export BOOTSTRAP_SERVERS="b-2.demo-msk-cluster.okz0lv.c20.kafka.us-east-1.amazonaws.com:9098,b-1.demo-msk-cluster.okz0lv.c20.kafka.us-east-1.amazonaws.com:9098"
 
 java -verbose -Xdebug -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample $BOOTSTRAP_SERVERS
 
-# java -cp target/kafka-streams-examples-7.0.1-standalone.jar io.confluent.examples.streams.WordCountLambdaExample
-
-# *** CHANGE ME - Bootstrap servers ***
-export BOOTSTRAP_SERVERS="b-1.demo-msk-cluster-iam.99s971.c2.kafka.us-east-1.amazonaws.com:9098,b-2.demo-msk-cluster-iam.99s971.c2.kafka.us-east-1.amazonaws.com:9098,b-3.demo-msk-cluster-iam.99s971.c2.kafka.us-east-1.amazonaws.com:9098"
-export BOOTSTRAP_SERVERS="b-4.demo-msk-cluster-iam.99s971.c2.kafka.us-east-1.amazonaws.com:9094,b-3.demo-msk-cluster-iam.99s971.c2.kafka.us-east-1.amazonaws.com:9094,b-2.demo-msk-cluster-iam.99s971.c2.kafka.us-east-1.amazonaws.com:9094"
-export BOOTSTRAP_SERVERS="b-2.demo-msk-cluster-iam.99s971.c2.kafka.us-east-1.amazonaws.com:9092,b-3.demo-msk-cluster-iam.99s971.c2.kafka.us-east-1.amazonaws.com:9092,b-4.demo-msk-cluster-iam.99s971.c2.kafka.us-east-1.amazonaws.com:9092"
-
 bin/kafka-topics.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
+  --command-config config/client-iam.properties \
   --create \
   --topic streams-plaintext-input \
-  --partitions 3 \
-  --replication-factor 3
+  --partitions 2 \
+  --replication-factor 1
 
 bin/kafka-topics.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
+  --command-config config/client-iam.properties \
   --create \
   --topic streams-wordcount-output \
-  --partitions 3 \
-  --replication-factor 3
+  --partitions 2 \
+  --replication-factor 1
 
+# produce phrases with words
 bin/kafka-console-producer.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
+  --producer.config config/client-iam.properties \
   --topic streams-plaintext-input
 
-#  --producer.config config/client-iam.properties \
-
+# display phrases
 bin/kafka-console-consumer.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
+  --consumer.config config/client-iam.properties \
   --topic streams-plaintext-input \
   --from-beginning --max-messages 10 \
 
+# display word counts
 bin/kafka-console-consumer.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
+  --consumer.config config/client-iam.properties \
   --topic streams-wordcount-output \
   --from-beginning \
   --property print.key=true \
@@ -68,21 +76,65 @@ bin/kafka-console-consumer.sh \
 # list topics
 bin/kafka-topics.sh --list \
   --bootstrap-server $BOOTSTRAP_SERVERS
-#  --command-config config/client-iam.properties
+  --command-config config/client-iam.properties
+  --command-config config/client-iam.properties
 
 # get topic size
 bin/kafka-log-dirs.sh --describe \
   --bootstrap-server $BOOTSTRAP_SERVERS \
+  --command-config config/client-iam.properties
   --topic-list streams-plaintext-input
 
+# describe topic
 bin/kafka-log-dirs.sh --describe \
   --bootstrap-server $BOOTSTRAP_SERVERS \
+  --command-config config/client-iam.properties
   --topic-list streams-wordcount-output
 
 # delete topic
 bin/kafka-topics.sh --delete \
-  --topic streams-plaintext-input \
   --bootstrap-server $BOOTSTRAP_SERVERS \
-  --command-config config/client-iam.properties
+  --command-config config/client-iam.properties \
+  --topic streams-wordcount-output 
+```
 
+## Local Docker Version of Kafka
+
+```shell
+docker-compose up -d
+
+# exec into Kafka container to interact with Kafka
+docker exec -it container_id bash
+
+./opt/bitnami/kafka/bin/kafka-topics.sh \
+  --bootstrap-server localhost:9092 \
+  --create \
+  --topic streams-plaintext-input \
+  --partitions 1 \
+  --replication-factor 1
+
+./opt/bitnami/kafka/bin/kafka-topics.sh \
+  --bootstrap-server localhost:9092 \
+  --create \
+  --topic streams-wordcount-output \
+  --partitions 1 \
+  --replication-factor 1
+
+./opt/bitnami/kafka/bin/kafka-topics.sh \
+  --list \
+  --bootstrap-server localhost:9092
+
+./opt/bitnami/kafka/bin/kafka-console-producer.sh \
+  --bootstrap-server localhost:9092 \
+  --topic streams-plaintext-input
+
+./opt/bitnami/kafka/bin/kafka-console-consumer.sh \
+  --bootstrap-server localhost:9092 \
+  --topic streams-wordcount-output \
+  --from-beginning \
+  --property print.key=true \
+  --property value.deserializer=org.apache.kafka.common.serialization.LongDeserializer
+
+# run locally
+java -Xdebug -cp build/libs/KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample localhost:9092
 ```
