@@ -31,7 +31,7 @@ kubectl exec -it $KAFKA_POD -n kafka -c kstreams-app -- bash
 kubectl exec -it $KAFKA_POD -n kafka -c kafka-connect-msk-v3 -- bash
 
 # *** CHANGE ME - Bootstrap servers ***
-export BOOTSTRAP_SERVERS="b-2.demo-msk-cluster...kafka.us-east-1.amazonaws.com:9098,b-1.demo-msk-cluster..."
+export BOOTSTRAP_SERVERS="b-2.demo-msk-cluster.okz0lv.c20.kafka.us-east-1.amazonaws.com:9098,b-1.demo-msk-cluster.okz0lv.c20.kafka.us-east-1.amazonaws.com:9098"
 
 java -verbose -Xdebug -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample $BOOTSTRAP_SERVERS
 
