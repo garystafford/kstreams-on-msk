@@ -1,6 +1,8 @@
 # Kafka Streams Example for Amazon MSK with IAM Auth
 
-Adoption of the `WordCountLambdaExample.java` code example from Confluent for use with IAM access control for Amazon MSK. Example code demonstrates the Apache Kafka Streams API (aka Kafka Streams or KStreams).
+Adoption of the simple `WordCountLambdaExample.java` code example from Confluent for use with IAM access control for Amazon MSK. Example code demonstrates the Apache Kafka Streams API (aka Kafka Streams or KStreams).
+
+Build Gradle 7.4. Compiled and ran on OpenJDK 8u322. Build as fat jar (`shadowJar`) using `com.github.johnrengelman.shadow`. Application ran from within OpenJDK 8u322 docker base container, running on Amazon EKS.
 
 ## Reference
 
@@ -16,7 +18,7 @@ gradle clean shadowJar
 
 export AWS_ACCOUNT=$(aws sts get-caller-identity --output text --query 'Account')
 export EKS_REGION="us-east-1"
-export CLUSTER_NAME="istio-observe-demo"
+export CLUSTER_NAME="eks-demo-cluster"
 export NAMESPACE="kafka"
 export KAFKA_POD=$(
   kubectl get pods -n kafka -l app=kafka-connect-msk-v3 | \
@@ -33,7 +35,9 @@ kubectl exec -it $KAFKA_POD -n kafka -c kafka-connect-msk-v3 -- bash
 # *** CHANGE ME - Bootstrap servers ***
 export BOOTSTRAP_SERVERS="b-2.demo-msk-cluster.okz0lv.c20.kafka.us-east-1.amazonaws.com:9098,b-1.demo-msk-cluster.okz0lv.c20.kafka.us-east-1.amazonaws.com:9098"
 
+# run app
 java -verbose -Xdebug -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample $BOOTSTRAP_SERVERS
+java -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample $BOOTSTRAP_SERVERS
 
 bin/kafka-topics.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
@@ -135,6 +139,6 @@ docker exec -it container_id bash
   --property print.key=true \
   --property value.deserializer=org.apache.kafka.common.serialization.LongDeserializer
 
-# run locally
-java -Xdebug -cp build/libs/KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample localhost:9092
+# run locally with Kafka 2.8.1/ZooKeeper running in local containers
+java -cp build/libs/KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample localhost:9092
 ```

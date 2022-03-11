@@ -23,14 +23,14 @@ public class WordCountLambdaExample {
     static final Logger logger = LogManager.getLogger(WordCountLambdaExample.class);
     static final String inputTopic = "streams-plaintext-input";
     static final String outputTopic = "streams-wordcount-output";
-    static final Properties prop = new Properties();
+    static final Properties saslConfiguration = new Properties();
 
     /**
      * The Streams application as a whole can be launched like any normal Java application that has a `main()` method.
      */
     public static void main(final String[] args) {
 
-        if (getSaslProperties()) return;
+        if (getSaslConfiguration()) return;
 
         final String bootstrapServers = args.length > 0 ? args[0] : "localhost:9092";
         logger.debug(bootstrapServers);
@@ -44,15 +44,6 @@ public class WordCountLambdaExample {
         final KafkaStreams streams = new KafkaStreams(builder.build(), streamsConfiguration);
 
         // Always (and unconditionally) clean local state prior to starting the processing topology.
-        // We opt for this unconditional call here because this will make it easier for you to play around with the example
-        // when resetting the application for doing a re-run (via the Application Reset Tool,
-        // https://docs.confluent.io/platform/current/streams/developer-guide/app-reset-tool.html).
-        //
-        // The drawback of cleaning up local state prior is that your app must rebuilt its local state from scratch, which
-        // will take time and will require reading all the state-relevant data from the Kafka cluster over the network.
-        // Thus in a production scenario you typically do not want to clean up always as we do here but rather only when it
-        // is truly needed, i.e., only under certain conditions (e.g., the presence of a command line flag for your app).
-        // See `ApplicationResetExample.java` for a production-like example.
         streams.cleanUp();
 
         // Now run the processing topology via `start()` to begin processing its input data.
@@ -62,7 +53,7 @@ public class WordCountLambdaExample {
         Runtime.getRuntime().addShutdownHook(new Thread(streams::close));
     }
 
-    private static boolean getSaslProperties() {
+    private static boolean getSaslConfiguration() {
 
         //load a properties file
         try (InputStream input = WordCountLambdaExample.class.getClassLoader().getResourceAsStream("config.properties")) {
@@ -73,13 +64,13 @@ public class WordCountLambdaExample {
             }
 
             //load a properties file from class path, inside static method
-            prop.load(input);
+            saslConfiguration.load(input);
 
             //get the property value and print it out
-            logger.debug(prop.getProperty("security.protocol"));
-            logger.debug(prop.getProperty("sasl.mechanism"));
-            logger.debug(prop.getProperty("sasl.jaas.config"));
-            logger.debug(prop.getProperty("sasl.client.callback.handler.class"));
+            logger.debug(saslConfiguration.getProperty("security.protocol"));
+            logger.debug(saslConfiguration.getProperty("sasl.mechanism"));
+            logger.debug(saslConfiguration.getProperty("sasl.jaas.config"));
+            logger.debug(saslConfiguration.getProperty("sasl.client.callback.handler.class"));
 
         } catch (IOException ex) {
             ex.printStackTrace();
@@ -116,11 +107,11 @@ public class WordCountLambdaExample {
         // Use a temporary directory for storing state, which will be automatically removed after the test.
         streamsConfiguration.put(StreamsConfig.STATE_DIR_CONFIG, TestUtils.tempDirectory().getAbsolutePath());
 
-        // Extra config AWS IAM AuthN/AuthZ for Amazon MSK
-        streamsConfiguration.put(StreamsConfig.SECURITY_PROTOCOL_CONFIG, prop.getProperty("security.protocol"));
-        streamsConfiguration.put(SaslConfigs.SASL_MECHANISM, prop.getProperty("sasl.mechanism"));
-        streamsConfiguration.put(SaslConfigs.SASL_JAAS_CONFIG, prop.getProperty("sasl.jaas.config"));
-        streamsConfiguration.put(SaslConfigs.SASL_CLIENT_CALLBACK_HANDLER_CLASS, prop.getProperty("sasl.client.callback.handler.class"));
+        // Extra configuration for Amazon MSK auth using AWS IAM
+        streamsConfiguration.put(StreamsConfig.SECURITY_PROTOCOL_CONFIG, saslConfiguration.getProperty("security.protocol"));
+        streamsConfiguration.put(SaslConfigs.SASL_MECHANISM, saslConfiguration.getProperty("sasl.mechanism"));
+        streamsConfiguration.put(SaslConfigs.SASL_JAAS_CONFIG, saslConfiguration.getProperty("sasl.jaas.config"));
+        streamsConfiguration.put(SaslConfigs.SASL_CLIENT_CALLBACK_HANDLER_CLASS, saslConfiguration.getProperty("sasl.client.callback.handler.class"));
 
         logger.debug(streamsConfiguration);
 
