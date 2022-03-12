@@ -1,4 +1,4 @@
-# Kafka Streams Example for Amazon MSK with IAM Auth
+# Kafka Streams Example for Amazon MSK with AWS IAM
 
 Simple `WordCountLambdaExample.java` code example from Confluent, adopted for use with [IAM access control for Amazon MSK](https://docs.aws.amazon.com/msk/latest/developerguide/iam-access-control.html). The example code demonstrates the use of the [Apache Kafka Streams API](https://kafka.apache.org/documentation/streams/) (_aka Kafka Streams or KStreams_).
 
