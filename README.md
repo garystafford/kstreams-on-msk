@@ -1,8 +1,8 @@
 # Kafka Streams Example for Amazon MSK with IAM Auth
 
-Adoption of the simple `WordCountLambdaExample.java` code example from Confluent, for use with AWS IAM access control for Amazon MSK. Example code demonstrates the Apache Kafka Streams API (aka Kafka Streams or KStreams).
+Simple `WordCountLambdaExample.java` code example from Confluent, adopted for use with [IAM access control for Amazon MSK](https://docs.aws.amazon.com/msk/latest/developerguide/iam-access-control.html). The example code demonstrates the use of the [Apache Kafka Streams API](https://kafka.apache.org/documentation/streams/) (_aka Kafka Streams or KStreams_).
 
-Build Gradle 7.4. Compiled and ran on OpenJDK 8u322. Build as fat jar (`shadowJar`) using `com.github.johnrengelman.shadow`. Application ran from within OpenJDK 8u322 container, running on an Amazon EKS cluster. Kafka API commands ran from within a Kafka container, running on an Amazon EKS cluster.
+For this demonstration, the appliation was built with Gradle 7.4 as fat jar (`shadowJar`) using `com.github.johnrengelman.shadow`. The application was compiled using Java OpenJDK 8u322. The appliation was ran from within an OpenJDK 8u322 container on an Amazon EKS cluster. The Kafka API commands were ran from within a container, containing the Kafka APIs, also running on the same Amazon EKS cluster.
 
 ## Reference
 
