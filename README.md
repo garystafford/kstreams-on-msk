@@ -142,3 +142,8 @@ docker exec -it container_id bash
 # run locally with Kafka 2.8.1/ZooKeeper running in local containers
 java -cp build/libs/KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample localhost:9092
 ```
+
+---
+
+<i>The contents of this repository represent my viewpoints and not of my past or current employers, including Amazon Web
+Services (AWS). All third-party libraries, modules, plugins, and SDKs are the property of their respective owners.</i>
