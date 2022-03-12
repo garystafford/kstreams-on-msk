@@ -33,7 +33,7 @@ kubectl cp -n kafka -c kstreams-app build/libs/KStreamsDemo-1.0-SNAPSHOT-all.jar
 # in separate terminal window, exec into java container running on eks cluster to run the kstreams application
 kubectl exec -it $KAFKA_POD -n kafka -c kstreams-app -- bash
 
-# in separate terminal window, exec into kafka container running on eks cluster to run producer and consumer commands
+# in separate terminal window, exec into kafka container running on eks cluster to run the kafka api commands
 kubectl exec -it $KAFKA_POD -n kafka -c kafka-connect -- bash
 
 # *** CHANGE ME - msk bootstrap servers ***
