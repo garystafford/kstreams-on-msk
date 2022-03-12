@@ -17,32 +17,28 @@ Commands to build with Gradle, copy to an Amazon EKS pod container and run.
 # build kstreams application fat jar
 gradle clean shadowJar
 
-# set local variables required to exec into container running running on eks cluster
-export AWS_ACCOUNT=$(aws sts get-caller-identity --output text --query 'Account')
-export EKS_REGION="us-east-1"
-export CLUSTER_NAME="eks-demo-cluster"
-export NAMESPACE="kafka"
+# get kstream application pod name running on eks cluster 
 export KAFKA_POD=$(
-  kubectl get pods -n kafka -l app=kafka-connect-msk-v3 | \
+  kubectl get pods -n kafka -l app=kstreams-demo | \
     awk 'FNR == 2 {print $1}')
 
-# copy kstreams application fat jar to container running on eks cluster
+# copy kstreams application fat jar to java container running on eks cluster
 kubectl cp -n kafka -c kstreams-app build/libs/KStreamsDemo-1.0-SNAPSHOT-all.jar $KAFKA_POD:/kafka_2.13-3.1.0
 
-# run kstreams application in terminal window using a container running on eks cluster
+# in separate terminal window, exec into java container running on eks cluster to run the kstreams application
 kubectl exec -it $KAFKA_POD -n kafka -c kstreams-app -- bash
 
-# run producer and consumer commands in terminal window using a container running on eks cluster
-kubectl exec -it $KAFKA_POD -n kafka -c kafka-connect-msk-v3 -- bash
+# in separate terminal window, exec into kafka container running on eks cluster to run producer and consumer commands
+kubectl exec -it $KAFKA_POD -n kafka -c kafka-connect -- bash
 
 # *** CHANGE ME - msk bootstrap servers ***
 export BOOTSTRAP_SERVERS="b-2.msk-demo-cluster...kafka.us-east-1.amazonaws.com:9098,b-1.msk-demo-cluster...kafka.us-east-1.amazonaws.com:9098"
 
-# run kstreams application
+# run kstreams application (will run continuously)
 java -verbose -Xdebug -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample $BOOTSTRAP_SERVERS
 java -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample $BOOTSTRAP_SERVERS
 
-# create topics
+# create two topics
 bin/kafka-topics.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
   --command-config config/client-iam.properties \
@@ -65,14 +61,14 @@ bin/kafka-console-producer.sh \
   --producer.config config/client-iam.properties \
   --topic streams-plaintext-input
 
-# display messages containing phrases with words
+# display (consume) messages containing phrases with words
 bin/kafka-console-consumer.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
   --consumer.config config/client-iam.properties \
   --topic streams-plaintext-input \
   --from-beginning --max-messages 10 \
 
-# display word counts (processed by kstreams application)
+# display (consume) word counts, which were processed by kstreams application
 bin/kafka-console-consumer.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
   --consumer.config config/client-iam.properties \
@@ -90,7 +86,7 @@ bin/kafka-topics.sh --list \
 bin/kafka-log-dirs.sh --describe \
   --bootstrap-server $BOOTSTRAP_SERVERS \
   --command-config config/client-iam.properties \
-  --topic-list streams-plaintext-input
+  --topic-list streams-wordcount-output
 
 # describe topic
 bin/kafka-log-dirs.sh --describe \
