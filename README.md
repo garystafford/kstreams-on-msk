@@ -1,17 +1,17 @@
 # Kafka Streams Example for Amazon MSK with IAM Auth
 
-Adoption of the simple `WordCountLambdaExample.java` code example from Confluent for use with IAM access control for Amazon MSK. Example code demonstrates the Apache Kafka Streams API (aka Kafka Streams or KStreams).
+Adoption of the simple `WordCountLambdaExample.java` code example from Confluent, for use with AWS IAM access control for Amazon MSK. Example code demonstrates the Apache Kafka Streams API (aka Kafka Streams or KStreams).
 
-Build Gradle 7.4. Compiled and ran on OpenJDK 8u322. Build as fat jar (`shadowJar`) using `com.github.johnrengelman.shadow`. Application ran from within OpenJDK 8u322 docker base container, running on an Amazon EKS cluster.
+Build Gradle 7.4. Compiled and ran on OpenJDK 8u322. Build as fat jar (`shadowJar`) using `com.github.johnrengelman.shadow`. Application ran from within OpenJDK 8u322 container, running on an Amazon EKS cluster. Kafka API commands ran from within a Kafka container, running on an Amazon EKS cluster.
 
 ## Reference
 
 - <https://github.com/confluentinc/kafka-streams-examples/blob/7.0.0-post/src/main/java/io/confluent/examples/streams/WordCountLambdaExample.java>
 - <https://github.com/JohnReedLOL/kafka-streams/blob/master/src/main/java/io/confluent/examples/streams/SecureKafkaStreamsExample.java>
 
-## Commands to Build, Copy, and Run
+## Build, Copy, and Run the KStreams Application on EKS/MSK
 
-Commands to build with Gradle, copy to an Amazon EKS pod container and run.
+Commands to create the Kafka topics, build the application with Gradle, copy fat jar to an Amazon EKS pod container, run the application, and produce input messages.
 
 ```shell
 # build kstreams application fat jar
@@ -35,7 +35,10 @@ kubectl exec -it $KAFKA_POD -n kafka -c kafka-connect -- bash
 export BOOTSTRAP_SERVERS="b-2.msk-demo-cluster...kafka.us-east-1.amazonaws.com:9098,b-1.msk-demo-cluster...kafka.us-east-1.amazonaws.com:9098"
 
 # run kstreams application (will run continuously)
+# with debug/verbose output
 java -verbose -Xdebug -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample $BOOTSTRAP_SERVERS
+
+# without verbose output
 java -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample $BOOTSTRAP_SERVERS
 
 # create two topics
@@ -55,7 +58,7 @@ bin/kafka-topics.sh \
   --partitions 3 \
   --replication-factor 1
 
-# produce messages containing phrases with words
+# produce messages containing phrases with words (kstreams app must be running first)
 bin/kafka-console-producer.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
   --producer.config config/client-iam.properties \
@@ -103,44 +106,51 @@ bin/kafka-topics.sh --delete \
 
 ## Local Docker Version of Kafka
 
-For debugging project locally using Dockerized version of Apache Kafka and ZooKeeper.
+Local Dockerized version of Apache Kafka 2.8.1 (same as Amazon MSK version used in demo) and ZooKeeper for debugging project.
 
 ```shell
+# create Apache Kafka and ZooKeeper containers locally
 docker-compose up -d
 
 # exec into Kafka container to interact with Kafka
-docker exec -it container_id bash
+docker exec -it kstreamsdemo_kafka_1 bash
 
-./opt/bitnami/kafka/bin/kafka-topics.sh \
+cd ./opt/bitnami/kafka/bin/
+
+# create two topics
+kafka-topics.sh \
   --bootstrap-server localhost:9092 \
   --create \
   --topic streams-plaintext-input \
   --partitions 1 \
   --replication-factor 1
 
-./opt/bitnami/kafka/bin/kafka-topics.sh \
+kafka-topics.sh \
   --bootstrap-server localhost:9092 \
   --create \
   --topic streams-wordcount-output \
   --partitions 1 \
   --replication-factor 1
 
-./opt/bitnami/kafka/bin/kafka-topics.sh \
+# list all topics
+kafka-topics.sh \
   --list \
   --bootstrap-server localhost:9092
 
-./opt/bitnami/kafka/bin/kafka-console-producer.sh \
+# produce messages containing phrases with words (kstreams app must be running first)
+kafka-console-producer.sh \
   --bootstrap-server localhost:9092 \
   --topic streams-plaintext-input
 
-./opt/bitnami/kafka/bin/kafka-console-consumer.sh \
+# display (consume) word counts, which were processed by kstreams application
+kafka-console-consumer.sh \
   --bootstrap-server localhost:9092 \
   --topic streams-wordcount-output \
   --from-beginning \
   --property print.key=true \
   --property value.deserializer=org.apache.kafka.common.serialization.LongDeserializer
 
-# run locally with Kafka 2.8.1/ZooKeeper running in local containers
+# run kstreams application locally using dockerized version of kafka
 java -cp build/libs/KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample localhost:9092
 ```
 
