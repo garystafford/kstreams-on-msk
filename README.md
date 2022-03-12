@@ -11,7 +11,9 @@ Commands to create the Kafka topics, build the application with Gradle, copy fat
 ```shell
 # build kstreams application fat jar
 gradle clean shadowJar
+```
 
+```shell
 # get kstream application pod name running on eks cluster
 export AWS_ACCOUNT=$(aws sts get-caller-identity --output text --query 'Account')
 export EKS_REGION="us-east-1"
@@ -21,25 +23,14 @@ export APPLICATION="kstreams-demo"
 export KAFKA_POD=$(
   kubectl get pods -n $NAMESPACE -l app=$APPLICATION | \
     awk 'FNR == 2 {print $1}')
+```
 
-# copy kstreams application fat jar to java container running on eks cluster
-kubectl cp -n kafka -c kstreams-app build/libs/KStreamsDemo-1.0-SNAPSHOT-all.jar $KAFKA_POD:/kafka_2.13-3.1.0
-
-# in separate terminal window, exec into java container running on eks cluster to run the kstreams application
-kubectl exec -it $KAFKA_POD -n kafka -c kstreams-app -- bash
-
+```shell
 # in separate terminal window, exec into kafka container running on eks cluster to run the kafka api commands
 kubectl exec -it $KAFKA_POD -n kafka -c kafka-connect -- bash
 
 # *** CHANGE ME - msk bootstrap servers ***
 export BOOTSTRAP_SERVERS="b-2.msk-demo-cluster...kafka.us-east-1.amazonaws.com:9098,b-1.msk-demo-cluster...kafka.us-east-1.amazonaws.com:9098"
-
-# run kstreams application (will run continuously)
-# with debug/verbose output
-java -verbose -Xdebug -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample $BOOTSTRAP_SERVERS
-
-# without verbose output
-java -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample $BOOTSTRAP_SERVERS
 
 # create two topics
 bin/kafka-topics.sh \
@@ -58,7 +49,7 @@ bin/kafka-topics.sh \
   --partitions 1 \
   --replication-factor 1
 
-# produce messages containing phrases with words (kstreams app must be running first)
+# produce messages containing phrases with words (kstreams app must be running first - see below)
 bin/kafka-console-producer.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
   --producer.config config/client-iam.properties \
@@ -71,7 +62,7 @@ bin/kafka-console-consumer.sh \
   --topic streams-plaintext-input \
   --from-beginning --max-messages 10 \
 
-# display (consume) word counts, which were processed by kstreams application
+# display (consume) word counts, which were processed by kstreams application (kstreams app must be running first - see below)
 bin/kafka-console-consumer.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
   --consumer.config config/client-iam.properties \
@@ -101,6 +92,24 @@ bin/kafka-topics.sh --delete \
   --bootstrap-server $BOOTSTRAP_SERVERS \
   --command-config config/client-iam.properties \
   --topic streams-wordcount-output 
+```
+
+```shell
+# copy kstreams application fat jar to java container running on eks cluster
+kubectl cp -n kafka -c kstreams-app build/libs/KStreamsDemo-1.0-SNAPSHOT-all.jar $KAFKA_POD:/kafka_2.13-3.1.0
+
+# in separate terminal window, exec into java container running on eks cluster to run the kstreams application
+kubectl exec -it $KAFKA_POD -n kafka -c kstreams-app -- bash
+
+# *** CHANGE ME - msk bootstrap servers ***
+export BOOTSTRAP_SERVERS="b-2.msk-demo-cluster...kafka.us-east-1.amazonaws.com:9098,b-1.msk-demo-cluster...kafka.us-east-1.amazonaws.com:9098"
+
+# run kstreams application (will run continuously)
+# with debug/verbose output
+java -verbose -Xdebug -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample $BOOTSTRAP_SERVERS
+
+# without verbose output
+java -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample $BOOTSTRAP_SERVERS
 ```
 
 ## Local Docker Version of Kafka
