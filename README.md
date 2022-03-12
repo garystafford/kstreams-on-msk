@@ -49,20 +49,13 @@ bin/kafka-topics.sh \
   --partitions 1 \
   --replication-factor 1
 
-# produce messages containing phrases with words (kstreams app must be running first - see below)
+# input text (produce messages) (NOTE kstreams app must be running first - see below)
 bin/kafka-console-producer.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
   --producer.config config/client-iam.properties \
   --topic streams-plaintext-input
 
-# display (consume) messages containing phrases with words
-bin/kafka-console-consumer.sh \
-  --bootstrap-server $BOOTSTRAP_SERVERS \
-  --consumer.config config/client-iam.properties \
-  --topic streams-plaintext-input \
-  --from-beginning --max-messages 10 \
-
-# display (consume) word counts, which were processed by kstreams application (kstreams app must be running first - see below)
+# display word counts (consume messages) processed by kstreams app (NOTE kstreams app must be running first - see below)
 bin/kafka-console-consumer.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
   --consumer.config config/client-iam.properties \
@@ -70,28 +63,6 @@ bin/kafka-console-consumer.sh \
   --from-beginning \
   --property print.key=true \
   --property value.deserializer=org.apache.kafka.common.serialization.LongDeserializer
-
-# list all topics
-bin/kafka-topics.sh --list \
-  --bootstrap-server $BOOTSTRAP_SERVERS \
-  --command-config config/client-iam.properties
-
-# describe topic / get topic size
-bin/kafka-log-dirs.sh --describe \
-  --bootstrap-server $BOOTSTRAP_SERVERS \
-  --command-config config/client-iam.properties \
-  --topic-list streams-wordcount-output
-
-# delete topics
-bin/kafka-topics.sh --delete \
-  --bootstrap-server $BOOTSTRAP_SERVERS \
-  --command-config config/client-iam.properties \
-  --topic streams-plaintext-input 
-
-bin/kafka-topics.sh --delete \
-  --bootstrap-server $BOOTSTRAP_SERVERS \
-  --command-config config/client-iam.properties \
-  --topic streams-wordcount-output 
 ```
 
 ```shell
@@ -110,6 +81,39 @@ java -verbose -Xdebug -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.example
 
 # without verbose output
 java -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample $BOOTSTRAP_SERVERS
+```
+
+### Optional Kafka API Commands
+
+```shell
+# list all topics
+bin/kafka-topics.sh --list \
+  --bootstrap-server $BOOTSTRAP_SERVERS \
+  --command-config config/client-iam.properties
+
+# display input text (consume messages)
+bin/kafka-console-consumer.sh \
+  --bootstrap-server $BOOTSTRAP_SERVERS \
+  --consumer.config config/client-iam.properties \
+  --topic streams-plaintext-input \
+  --from-beginning --max-messages 100 \
+
+# describe topic / get topic size
+bin/kafka-log-dirs.sh --describe \
+  --bootstrap-server $BOOTSTRAP_SERVERS \
+  --command-config config/client-iam.properties \
+  --topic-list streams-wordcount-output
+
+# delete topics
+bin/kafka-topics.sh --delete \
+  --bootstrap-server $BOOTSTRAP_SERVERS \
+  --command-config config/client-iam.properties \
+  --topic streams-plaintext-input 
+
+bin/kafka-topics.sh --delete \
+  --bootstrap-server $BOOTSTRAP_SERVERS \
+  --command-config config/client-iam.properties \
+  --topic streams-wordcount-output
 ```
 
 ## Local Docker Version of Kafka
@@ -145,12 +149,12 @@ kafka-topics.sh \
   --list \
   --bootstrap-server localhost:9092
 
-# produce messages containing phrases with words (kstreams app must be running first)
+# input text (produce messages) (NOTE kstreams app must be running first - see below)
 kafka-console-producer.sh \
   --bootstrap-server localhost:9092 \
   --topic streams-plaintext-input
 
-# display (consume) word counts, which were processed by kstreams application
+# display word counts (consume messages) processed by kstreams app (NOTE kstreams app must be running first - see below)
 kafka-console-consumer.sh \
   --bootstrap-server localhost:9092 \
   --topic streams-wordcount-output \
