@@ -2,7 +2,7 @@
 
 Adoption of the simple `WordCountLambdaExample.java` code example from Confluent for use with IAM access control for Amazon MSK. Example code demonstrates the Apache Kafka Streams API (aka Kafka Streams or KStreams).
 
-Build Gradle 7.4. Compiled and ran on OpenJDK 8u322. Build as fat jar (`shadowJar`) using `com.github.johnrengelman.shadow`. Application ran from within OpenJDK 8u322 docker base container, running on Amazon EKS.
+Build Gradle 7.4. Compiled and ran on OpenJDK 8u322. Build as fat jar (`shadowJar`) using `com.github.johnrengelman.shadow`. Application ran from within OpenJDK 8u322 docker base container, running on an Amazon EKS cluster.
 
 ## Reference
 
@@ -14,8 +14,10 @@ Build Gradle 7.4. Compiled and ran on OpenJDK 8u322. Build as fat jar (`shadowJa
 Commands to build with Gradle, copy to an Amazon EKS pod container and run.
 
 ```shell
+# build kstreams application fat jar
 gradle clean shadowJar
 
+# set local variables required to exec into container running running on eks cluster
 export AWS_ACCOUNT=$(aws sts get-caller-identity --output text --query 'Account')
 export EKS_REGION="us-east-1"
 export CLUSTER_NAME="eks-demo-cluster"
@@ -24,27 +26,29 @@ export KAFKA_POD=$(
   kubectl get pods -n kafka -l app=kafka-connect-msk-v3 | \
     awk 'FNR == 2 {print $1}')
 
+# copy kstreams application fat jar to container running on eks cluster
 kubectl cp -n kafka -c kstreams-app build/libs/KStreamsDemo-1.0-SNAPSHOT-all.jar $KAFKA_POD:/kafka_2.13-3.1.0
 
-# run app
+# run kstreams application in terminal window using a container running on eks cluster
 kubectl exec -it $KAFKA_POD -n kafka -c kstreams-app -- bash
 
-# run producer/consumer
+# run producer and consumer commands in terminal window using a container running on eks cluster
 kubectl exec -it $KAFKA_POD -n kafka -c kafka-connect-msk-v3 -- bash
 
-# *** CHANGE ME - Bootstrap servers ***
-export BOOTSTRAP_SERVERS="b-2.demo-msk-cluster.okz0lv.c20.kafka.us-east-1.amazonaws.com:9098,b-1.demo-msk-cluster.okz0lv.c20.kafka.us-east-1.amazonaws.com:9098"
+# *** CHANGE ME - msk bootstrap servers ***
+export BOOTSTRAP_SERVERS="b-2.msk-demo-cluster...kafka.us-east-1.amazonaws.com:9098,b-1.msk-demo-cluster...kafka.us-east-1.amazonaws.com:9098"
 
-# run app
+# run kstreams application
 java -verbose -Xdebug -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample $BOOTSTRAP_SERVERS
 java -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample $BOOTSTRAP_SERVERS
 
+# create topics
 bin/kafka-topics.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
   --command-config config/client-iam.properties \
   --create \
   --topic streams-plaintext-input \
-  --partitions 2 \
+  --partitions 3 \
   --replication-factor 1
 
 bin/kafka-topics.sh \
@@ -52,23 +56,23 @@ bin/kafka-topics.sh \
   --command-config config/client-iam.properties \
   --create \
   --topic streams-wordcount-output \
-  --partitions 2 \
+  --partitions 3 \
   --replication-factor 1
 
-# produce phrases with words
+# produce messages containing phrases with words
 bin/kafka-console-producer.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
   --producer.config config/client-iam.properties \
   --topic streams-plaintext-input
 
-# display phrases
+# display messages containing phrases with words
 bin/kafka-console-consumer.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
   --consumer.config config/client-iam.properties \
   --topic streams-plaintext-input \
   --from-beginning --max-messages 10 \
 
-# display word counts
+# display word counts (processed by kstreams application)
 bin/kafka-console-consumer.sh \
   --bootstrap-server $BOOTSTRAP_SERVERS \
   --consumer.config config/client-iam.properties \
@@ -77,22 +81,21 @@ bin/kafka-console-consumer.sh \
   --property print.key=true \
   --property value.deserializer=org.apache.kafka.common.serialization.LongDeserializer
 
-# list topics
+# list all topics
 bin/kafka-topics.sh --list \
-  --bootstrap-server $BOOTSTRAP_SERVERS
-  --command-config config/client-iam.properties
+  --bootstrap-server $BOOTSTRAP_SERVERS \
   --command-config config/client-iam.properties
 
 # get topic size
 bin/kafka-log-dirs.sh --describe \
   --bootstrap-server $BOOTSTRAP_SERVERS \
-  --command-config config/client-iam.properties
+  --command-config config/client-iam.properties \
   --topic-list streams-plaintext-input
 
 # describe topic
 bin/kafka-log-dirs.sh --describe \
   --bootstrap-server $BOOTSTRAP_SERVERS \
-  --command-config config/client-iam.properties
+  --command-config config/client-iam.properties \
   --topic-list streams-wordcount-output
 
 # delete topic
@@ -103,6 +106,8 @@ bin/kafka-topics.sh --delete \
 ```
 
 ## Local Docker Version of Kafka
+
+For debugging project locally using Dockerized version of Apache Kafka and ZooKeeper.
 
 ```shell
 docker-compose up -d
