@@ -10,7 +10,7 @@ For this demonstration, the appliation was built with [Gradle 7.4](https://gradl
 jar (`shadowJar`) using [`com.github.johnrengelman.shadow`](https://github.com/johnrengelman/shadow). The application
 was compiled using Java [OpenJDK 8u322](https://mail.openjdk.java.net/pipermail/jdk8u-dev/2022-January/014522.html). The
 application was run from within an OpenJDK 8u322 container on an Amazon EKS cluster. The Kafka API commands were run from
-within a container, containing the Kafka APIs, also running on the same Amazon EKS cluster. The Amazon MSK cluster was
+within a second container, containing the Kafka APIs, also running on the same Amazon EKS cluster. The Amazon MSK cluster was
 running Apache Kafka version 2.8.1.
 
 ## Build, Copy, and Run the KStreams Application on EKS/MSK
