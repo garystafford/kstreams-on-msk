@@ -87,10 +87,10 @@ export BOOTSTRAP_SERVERS="b-2.msk-demo-cluster...kafka.us-east-1.amazonaws.com:9
 
 # run kstreams application (will run continuously)
 # with debug/verbose output
-java -verbose -Xdebug -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample $BOOTSTRAP_SERVERS
+java -verbose -Xdebug -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExampleIAMAuth $BOOTSTRAP_SERVERS
 
 # without verbose output
-java -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample $BOOTSTRAP_SERVERS
+java -cp KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExampleIAMAuth $BOOTSTRAP_SERVERS
 ```
 
 ### Optional Kafka API Commands
@@ -173,8 +173,17 @@ kafka-console-consumer.sh \
   --property print.key=true \
   --property value.deserializer=org.apache.kafka.common.serialization.LongDeserializer
 
-# run kstreams application locally using dockerized version of kafka
-java -cp build/libs/KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExample localhost:9092
+# run kstreams application locally using dockerized version of kafka with no auth
+java -cp build/libs/KStreamsDemo-1.0-SNAPSHOT-all.jar io.confluent.examples.streams.WordCountLambdaExampleNoAuth localhost:9092
+
+# optional: delete topics
+kafka-topics.sh --delete \
+  --bootstrap-server localhost:9092 \
+  --topic streams-plaintext-input 
+
+kafka-topics.sh --delete \
+  --bootstrap-server localhost:9092 \
+  --topic streams-wordcount-output
 ```
 
 ---

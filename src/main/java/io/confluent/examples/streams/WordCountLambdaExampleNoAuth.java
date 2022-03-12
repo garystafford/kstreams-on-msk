@@ -1,7 +1,6 @@
 package io.confluent.examples.streams;
 
 import io.confluent.common.utils.TestUtils;
-import org.apache.kafka.common.config.SaslConfigs;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -12,25 +11,20 @@ import org.apache.kafka.streams.kstream.Produced;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
-public class WordCountLambdaExample {
+public class WordCountLambdaExampleNoAuth {
 
-    static final Logger logger = LogManager.getLogger(WordCountLambdaExample.class);
+    static final Logger logger = LogManager.getLogger(WordCountLambdaExampleNoAuth.class);
     static final String inputTopic = "streams-plaintext-input";
     static final String outputTopic = "streams-wordcount-output";
-    static final Properties saslConfiguration = new Properties();
 
     /**
      * The Streams application as a whole can be launched like any normal Java application that has a `main()` method.
      */
     public static void main(final String[] args) {
-
-        if (getSaslConfiguration()) return;
 
         final String bootstrapServers = args.length > 0 ? args[0] : "localhost:9092";
         logger.debug(bootstrapServers);
@@ -51,31 +45,6 @@ public class WordCountLambdaExample {
 
         // Add shutdown hook to respond to SIGTERM and gracefully close the Streams application.
         Runtime.getRuntime().addShutdownHook(new Thread(streams::close));
-    }
-
-    private static boolean getSaslConfiguration() {
-
-        //load a properties file
-        try (InputStream input = WordCountLambdaExample.class.getClassLoader().getResourceAsStream("config.properties")) {
-
-            if (input == null) {
-                logger.error("Sorry, unable to find config.properties");
-                return true;
-            }
-
-            //load a properties file from class path, inside static method
-            saslConfiguration.load(input);
-
-            //get the property value and print it out
-            logger.debug(saslConfiguration.getProperty("security.protocol"));
-            logger.debug(saslConfiguration.getProperty("sasl.mechanism"));
-            logger.debug(saslConfiguration.getProperty("sasl.jaas.config"));
-            logger.debug(saslConfiguration.getProperty("sasl.client.callback.handler.class"));
-
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-        return false;
     }
 
     /**
@@ -106,12 +75,6 @@ public class WordCountLambdaExample {
         streamsConfiguration.put(StreamsConfig.CACHE_MAX_BYTES_BUFFERING_CONFIG, 0);
         // Use a temporary directory for storing state, which will be automatically removed after the test.
         streamsConfiguration.put(StreamsConfig.STATE_DIR_CONFIG, TestUtils.tempDirectory().getAbsolutePath());
-
-        // Extra configuration for Amazon MSK auth using AWS IAM
-        streamsConfiguration.put(StreamsConfig.SECURITY_PROTOCOL_CONFIG, saslConfiguration.getProperty("security.protocol"));
-        streamsConfiguration.put(SaslConfigs.SASL_MECHANISM, saslConfiguration.getProperty("sasl.mechanism"));
-        streamsConfiguration.put(SaslConfigs.SASL_JAAS_CONFIG, saslConfiguration.getProperty("sasl.jaas.config"));
-        streamsConfiguration.put(SaslConfigs.SASL_CLIENT_CALLBACK_HANDLER_CLASS, saslConfiguration.getProperty("sasl.client.callback.handler.class"));
 
         logger.debug(streamsConfiguration);
 
