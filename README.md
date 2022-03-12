@@ -17,9 +17,14 @@ Commands to create the Kafka topics, build the application with Gradle, copy fat
 # build kstreams application fat jar
 gradle clean shadowJar
 
-# get kstream application pod name running on eks cluster 
+# get kstream application pod name running on eks cluster
+export AWS_ACCOUNT=$(aws sts get-caller-identity --output text --query 'Account')
+export EKS_REGION="us-east-1"
+export CLUSTER_NAME="eks-demo-cluster"
+export NAMESPACE="kafka"
+export APPLICATION="kstreams-demo"
 export KAFKA_POD=$(
-  kubectl get pods -n kafka -l app=kstreams-demo | \
+  kubectl get pods -n $NAMESPACE -l app=$APPLICATION | \
     awk 'FNR == 2 {print $1}')
 
 # copy kstreams application fat jar to java container running on eks cluster
@@ -47,7 +52,7 @@ bin/kafka-topics.sh \
   --command-config config/client-iam.properties \
   --create \
   --topic streams-plaintext-input \
-  --partitions 3 \
+  --partitions 1 \
   --replication-factor 1
 
 bin/kafka-topics.sh \
@@ -55,7 +60,7 @@ bin/kafka-topics.sh \
   --command-config config/client-iam.properties \
   --create \
   --topic streams-wordcount-output \
-  --partitions 3 \
+  --partitions 1 \
   --replication-factor 1
 
 # produce messages containing phrases with words (kstreams app must be running first)
@@ -85,19 +90,18 @@ bin/kafka-topics.sh --list \
   --bootstrap-server $BOOTSTRAP_SERVERS \
   --command-config config/client-iam.properties
 
-# get topic size
+# describe topic / get topic size
 bin/kafka-log-dirs.sh --describe \
   --bootstrap-server $BOOTSTRAP_SERVERS \
   --command-config config/client-iam.properties \
   --topic-list streams-wordcount-output
 
-# describe topic
-bin/kafka-log-dirs.sh --describe \
+# delete topics
+bin/kafka-topics.sh --delete \
   --bootstrap-server $BOOTSTRAP_SERVERS \
   --command-config config/client-iam.properties \
-  --topic-list streams-wordcount-output
+  --topic streams-plaintext-input 
 
-# delete topic
 bin/kafka-topics.sh --delete \
   --bootstrap-server $BOOTSTRAP_SERVERS \
   --command-config config/client-iam.properties \
@@ -106,7 +110,7 @@ bin/kafka-topics.sh --delete \
 
 ## Local Docker Version of Kafka
 
-Local Dockerized version of Apache Kafka 2.8.1 (same as Amazon MSK version used in demo) and ZooKeeper for debugging project.
+Local Dockerized version of Apache Kafka 2.8.1 (same as Amazon MSK version used in demo) and ZooKeeper for debugging project. Using unauthenticated Kafka configuration.
 
 ```shell
 # create Apache Kafka and ZooKeeper containers locally
